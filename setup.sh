@@ -22,7 +22,10 @@ URL="https://github.com/XIU2/CloudflareSpeedTest/releases/latest/download/$ASSET
 echo "下载 CloudflareSpeedTest: $URL"
 curl -fL --retry 3 "$URL" -o "$TMP/cfst.zip"
 rm -rf "$BIN_DIR"/*
-unzip -oq "$TMP/cfst.zip" -d "$BIN_DIR"
+
+# Mac 上自带的 unzip 遇到非 ASCII (比如中文) 压缩包内文件名时会报编码错误导致 "Bad file descriptor"
+# 改用 macOS 自带的 ditto 工具解压，它可以完美处理 zip 里的中文文件名编码
+ditto -V -x -k "$TMP/cfst.zip" "$BIN_DIR"
 
 CFST="$(find "$BIN_DIR" -type f \( -name 'cfst' -o -name 'CloudflareST' \) | head -n 1)"
 if [ -z "${CFST:-}" ]; then
@@ -31,7 +34,7 @@ if [ -z "${CFST:-}" ]; then
 fi
 chmod +x "$CFST"
 
-cat > "$PLIST" <<EOF
+cat > "$PLIST" <<PLIST_EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -52,7 +55,7 @@ cat > "$PLIST" <<EOF
   <key>StandardErrorPath</key><string>$LOG_DIR/launchd.err.log</string>
 </dict>
 </plist>
-EOF
+PLIST_EOF
 
 chmod +x "$ROOT/scripts/run_india_cfst.sh" "$ROOT/scripts/publish.sh"
 launchctl unload "$PLIST" 2>/dev/null || true
